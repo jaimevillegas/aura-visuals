@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import { AudioControls } from '../../components/dom/AudioControls';
 
 // Importación dinámica del componente de la escena 3D
-const Scene = dynamic(() => import('../../components/canvas/Scene'), {
+const VisualizerScene = dynamic(() => import('../../components/canvas/VisualizerScene'), {
   ssr: false, // ¡Muy importante! Three.js necesita el objeto 'window', que no existe en el servidor
 })
 
@@ -29,7 +29,7 @@ export default function VisualizerPage() {
     <div style={{ width: '100vw', height: '100vh', background: '#111' }}>
       <AudioControls />
       <Suspense fallback={<Loader />}>
-        <Scene />
+        <VisualizerScene />
       </Suspense>
     </div>
   )
