@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
+import { AudioControls } from '../../components/dom/AudioControls';
 
 // Importación dinámica del componente de la escena 3D
 const Scene = dynamic(() => import('../../components/canvas/Scene'), {
@@ -26,6 +27,7 @@ function Loader() {
 export default function VisualizerPage() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#111' }}>
+      <AudioControls />
       <Suspense fallback={<Loader />}>
         <Scene />
       </Suspense>

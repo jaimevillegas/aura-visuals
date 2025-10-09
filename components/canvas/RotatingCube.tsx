@@ -4,16 +4,21 @@
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useAudioStore } from '@/stores/audioStore'
 
 export function RotatingCube() {
   // useRef nos da acceso directo al objeto 3D (el mesh)
   const meshRef = useRef<THREE.Mesh>(null!)
+
+  const { low, mid, high } = useAudioStore((state) => state.frequencyData);
 
   // useFrame se ejecuta en cada fotograma (ideal para animaciones)
   useFrame((state, delta) => {
     // Rotamos el cubo en los ejes X e Y
     meshRef.current.rotation.x += delta * 0.5
     meshRef.current.rotation.y += delta * 0.5
+
+    console.log({ low, mid, high });
   })
 
   // Optimizaciones del plan de desarrollo:

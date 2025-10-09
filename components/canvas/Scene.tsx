@@ -4,6 +4,7 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei' // Un helper para mover la cámara
 import { RotatingCube } from './RotatingCube'
+import { AudioDataProvider } from './AudioDataProvider'
 
 export default function Scene() {
   return (
@@ -17,7 +18,7 @@ export default function Scene() {
       <gridHelper args={[10, 10]} /> {/* Muestra una cuadrícula en el suelo */}
 
       <RotatingCube />
-
+      <AudioDataProvider />
     </Canvas>
   )
 }
