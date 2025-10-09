@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { AudioControls } from '../../components/dom/AudioControls';
+import { ControlPanel } from '@/components/dom/ControlPanel';
 
 // Importación dinámica del componente de la escena 3D
 const VisualizerScene = dynamic(() => import('../../components/canvas/VisualizerScene'), {
@@ -28,6 +29,7 @@ export default function VisualizerPage() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#111' }}>
       <AudioControls />
+      <ControlPanel />
       <Suspense fallback={<Loader />}>
         <VisualizerScene />
       </Suspense>

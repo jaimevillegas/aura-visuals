@@ -12,6 +12,22 @@ export class AudioManager {
     this.analyser = this.audioContext.createAnalyser();
     this.analyser.fftSize = 2048;
     console.log("AudioManager inicializado y listo");
+
+    // Para solucionar la política de autoplay de los navegadores
+    this.resumeAudioContext();
+  }
+
+  // Método para reanudar el contexto de audio con un gesto del usuario
+  private resumeAudioContext() {
+    if (this.audioContext.state === 'suspended') {
+      const resume = async () => {
+        await this.audioContext.resume();
+        document.removeEventListener('click', resume);
+        document.removeEventListener('keydown', resume);
+      };
+      document.addEventListener('click', resume);
+      document.addEventListener('keydown', resume);
+    }
   }
 
   static getInstance(): AudioManager {
@@ -31,14 +47,17 @@ export class AudioManager {
 
     this.source = this.audioContext.createBufferSource();
     this.source.buffer = audioBuffer;
-
     this.source.connect(this.analyser);
     this.analyser.connect(this.audioContext.destination);
-
     this.source.start(0);
   }
 
-  getFrequencyData(): { low: number; mid: number; high: number } {
+  getFrequencyData(): {
+    low: number;
+    mid: number;
+    high: number;
+    rawData: Uint8Array;
+  } {
     const frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteFrequencyData(frequencyData);
 
@@ -49,6 +68,7 @@ export class AudioManager {
       low: this.calculateBandAverage(frequencyData, 10, 250, bufferLength, sampleRate),
       mid: this.calculateBandAverage(frequencyData, 250, 4000, bufferLength, sampleRate),
       high: this.calculateBandAverage(frequencyData, 4000, 16000, bufferLength, sampleRate),
+      rawData: frequencyData,
     };
   }
 
@@ -68,6 +88,6 @@ export class AudioManager {
     }
 
     const average = sum / (endIndex - startIndex);
-    return isNaN(average) ? 0 : average / 255; // Añadimos un chequeo para evitar NaN
+    return isNaN(average) ? 0 : average / 255;
   }
 }

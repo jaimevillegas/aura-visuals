@@ -16,9 +16,10 @@ function VisualizerLoader() {
 export default function VisualizerScene() {
   // Leemos del store cuál es el visualizador activo
   const activeVisualizerId = useVisualizerStore((state) => state.activeVisualizer)
+  const { barCount } = useVisualizerStore();
 
   // Obtenemos el componente correspondiente del registro
-  const ActiveVisualizer = VISUALIZER_REGISTRY[activeVisualizerId]?.component
+  const ActiveVisualizer = VISUALIZER_REGISTRY[activeVisualizerId as keyof typeof VISUALIZER_REGISTRY]?.component
 
   return (
     <Canvas camera={{ position: [0, 0, 30], fov: 75 }}>
@@ -34,7 +35,7 @@ export default function VisualizerScene() {
 
       {/* Lógica de renderizado dinámico */}
       <Suspense fallback={<VisualizerLoader />}>
-        {ActiveVisualizer ? <ActiveVisualizer /> : null}
+        {ActiveVisualizer ? <ActiveVisualizer key={barCount} /> : null}
       </Suspense>
     </Canvas>
   )
