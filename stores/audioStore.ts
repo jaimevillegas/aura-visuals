@@ -9,13 +9,25 @@ type FrequencyData = {
 
 interface AudioState {
   frequencyData: FrequencyData;
+  isPlaying: boolean;
+  currentSong: string | null;
+  currentTime: number;
+  duration: number;
   updateFrequencyData: (data: FrequencyData) => void;
+  setIsPlaying: (playing: boolean) => void;
+  setCurrentSong: (song: string | null) => void;
+  setCurrentTime: (time: number) => void;
+  setDuration: (duration: number) => void;
 }
 
 const initialFrequencyData = new Uint8Array(1024);
 
 export const useAudioStore = create<AudioState>((set) => ({
   frequencyData: { low: 0, mid: 0, high: 0, rawData: initialFrequencyData },
+  isPlaying: false,
+  currentSong: null,
+  currentTime: 0,
+  duration: 0,
   updateFrequencyData: (data) => set({
     frequencyData: {
       low: data.low,
@@ -25,5 +37,9 @@ export const useAudioStore = create<AudioState>((set) => ({
       rawData: data.rawData || initialFrequencyData
     }
   }),
+  setIsPlaying: (playing) => set({ isPlaying: playing }),
+  setCurrentSong: (song) => set({ currentSong: song }),
+  setCurrentTime: (time) => set({ currentTime: time }),
+  setDuration: (duration) => set({ duration: duration }),
 }));
 

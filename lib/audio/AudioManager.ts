@@ -5,7 +5,8 @@ export class AudioManager {
 
   private audioContext: AudioContext;
   private analyser: AnalyserNode;
-  private source: AudioBufferSourceNode | null = null;
+  private audioElement: HTMLAudioElement | null = null;
+  private source: MediaElementAudioSourceNode | null = null;
 
   private constructor() {
     this.audioContext = new AudioContext();
@@ -38,18 +39,73 @@ export class AudioManager {
   }
 
   async loadAudioFile(file: File): Promise<void> {
-    const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-
-    if (this.source) {
-      this.source.disconnect();
+    // Asegurarse de que el contexto de audio esté activo
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
     }
 
-    this.source = this.audioContext.createBufferSource();
-    this.source.buffer = audioBuffer;
+    // Si ya existe un audio element y source, desconectar y limpiar
+    if (this.source && this.audioElement) {
+      this.source.disconnect();
+      this.audioElement.pause();
+      this.audioElement.src = '';
+      this.source = null;
+    }
+
+    // Crear un nuevo audio element
+    this.audioElement = new Audio();
+    const url = URL.createObjectURL(file);
+    this.audioElement.src = url;
+    // No usamos crossOrigin para archivos locales
+
+    // Crear un nuevo source y conectar al analyser
+    this.source = this.audioContext.createMediaElementSource(this.audioElement);
     this.source.connect(this.analyser);
     this.analyser.connect(this.audioContext.destination);
-    this.source.start(0);
+
+    // Reproducir automáticamente
+    await this.audioElement.play();
+  }
+
+  play(): void {
+    if (this.audioElement) {
+      this.audioElement.play();
+    }
+  }
+
+  pause(): void {
+    if (this.audioElement) {
+      this.audioElement.pause();
+    }
+  }
+
+  stop(): void {
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement.currentTime = 0;
+    }
+  }
+
+  isPlaying(): boolean {
+    return this.audioElement ? !this.audioElement.paused : false;
+  }
+
+  getCurrentTime(): number {
+    return this.audioElement ? this.audioElement.currentTime : 0;
+  }
+
+  getDuration(): number {
+    return this.audioElement ? this.audioElement.duration : 0;
+  }
+
+  setCurrentTime(time: number): void {
+    if (this.audioElement) {
+      this.audioElement.currentTime = time;
+    }
+  }
+
+  getAudioElement(): HTMLAudioElement | null {
+    return this.audioElement;
   }
 
   getFrequencyData(): {
