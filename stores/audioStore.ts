@@ -13,11 +13,13 @@ interface AudioState {
   currentSong: string | null;
   currentTime: number;
   duration: number;
+  isPanelExpanded: boolean;
   updateFrequencyData: (data: FrequencyData) => void;
   setIsPlaying: (playing: boolean) => void;
   setCurrentSong: (song: string | null) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
+  setIsPanelExpanded: (expanded: boolean) => void;
 }
 
 const initialFrequencyData = new Uint8Array(1024);
@@ -28,6 +30,7 @@ export const useAudioStore = create<AudioState>((set) => ({
   currentSong: null,
   currentTime: 0,
   duration: 0,
+  isPanelExpanded: true,
   updateFrequencyData: (data) => set({
     frequencyData: {
       low: data.low,
@@ -41,5 +44,12 @@ export const useAudioStore = create<AudioState>((set) => ({
   setCurrentSong: (song) => set({ currentSong: song }),
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (duration) => set({ duration: duration }),
+  setIsPanelExpanded: (expanded) => {
+    set({ isPanelExpanded: expanded });
+    // Dispatch resize event to trigger canvas recalculation
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 100);
+  },
 }));
 

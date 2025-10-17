@@ -5,6 +5,9 @@ import { useRef, useState, useEffect } from 'react';
 import { useAudioStore } from '@/stores/audioStore';
 import { AudioManager } from '@/lib/audio/AudioManager';
 import { Play, Pause, Square, Upload } from 'lucide-react';
+import { RetroPanel } from '@/components/ui/retro/RetroPanel';
+import { LCDDisplay } from '@/components/ui/retro/LCDDisplay';
+import { NeonButton } from '@/components/ui/retro/NeonButton';
 
 export function AudioControlPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,101 +134,102 @@ export function AudioControlPanel() {
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10,
-        background: 'rgba(0, 0, 0, 0.85)',
-        padding: '16px',
-        borderRadius: '12px',
-        minWidth: '400px',
-        color: 'white',
-        backdropFilter: 'blur(10px)',
-        border: isDragging ? '2px solid #00ffff' : '1px solid rgba(255, 255, 255, 0.1)',
-      }}
+      className="fixed bottom-[calc(60vh+1rem)] left-1/2 -translate-x-1/2 z-10 min-w-[400px]"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="space-y-3">
-        {/* Nombre de la canción */}
-        <div className="text-center">
-          {currentSong ? (
-            <p className="text-sm font-bold text-cyan-400 truncate">{currentSong}</p>
-          ) : (
-            <p className="text-xs text-gray-400">No hay música cargada</p>
+      <RetroPanel
+        variant="primary"
+        hasGlow
+        hasBevel
+        glowColor={isDragging ? 'pink' : 'cyan'}
+        className="p-4"
+      >
+        <div className="space-y-3">
+          {/* Song Name LCD Display */}
+          <LCDDisplay variant="green" className="text-center min-h-[3rem] flex items-center justify-center">
+            {currentSong ? (
+              <p className="text-base font-bold truncate px-2">{currentSong}</p>
+            ) : (
+              <p className="text-sm opacity-70 tracking-wider">NO AUDIO LOADED</p>
+            )}
+          </LCDDisplay>
+
+          {/* Playback Controls */}
+          <div className="flex items-center justify-center gap-2">
+            <NeonButton
+              onClick={handlePlayPause}
+              disabled={!currentSong}
+              variant="cyan"
+              size="md"
+              icon={isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? 'Pause' : 'Play'}
+            </NeonButton>
+
+            <NeonButton
+              onClick={handleStop}
+              disabled={!currentSong}
+              variant="orange"
+              size="md"
+              icon={<Square size={20} />}
+              title="Stop"
+            >
+              Stop
+            </NeonButton>
+
+            <NeonButton
+              onClick={() => fileInputRef.current?.click()}
+              variant="green"
+              size="md"
+              icon={<Upload size={20} />}
+              title="Load File"
+            >
+              Load
+            </NeonButton>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={handleFileInput}
+              className="hidden"
+            />
+          </div>
+
+          {/* Progress Bar */}
+          {currentSong && (
+            <div className="space-y-1">
+              <input
+                type="range"
+                min="0"
+                max={duration || 0}
+                value={currentTime}
+                onChange={handleSeek}
+                className="w-full h-1 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #00ffff 0%, #00ffff ${(currentTime / duration) * 100}%, #2a2a3e ${(currentTime / duration) * 100}%, #2a2a3e 100%)`
+                }}
+              />
+              <div className="flex justify-between text-xs font-mono-retro text-neon-cyan/70 tabular-nums">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Drag & Drop Zone */}
+          {!currentSong && (
+            <div className="text-center py-4 border-2 border-dashed border-neon-cyan/30 rounded-lg bg-retro-dark/50">
+              <p className="text-xs font-mono-retro text-neon-cyan/60 uppercase tracking-wide">
+                Drag audio file here or click load button
+              </p>
+            </div>
           )}
         </div>
-
-        {/* Controles de reproducción */}
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={handlePlayPause}
-            disabled={!currentSong}
-            className="p-2 hover:bg-white/10 rounded-full disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title={isPlaying ? 'Pausar' : 'Reproducir'}
-          >
-            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-          </button>
-
-          <button
-            onClick={handleStop}
-            disabled={!currentSong}
-            className="p-2 hover:bg-white/10 rounded-full disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title="Detener"
-          >
-            <Square size={24} />
-          </button>
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            title="Cargar archivo"
-          >
-            <Upload size={24} />
-          </button>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="audio/*"
-            onChange={handleFileInput}
-            style={{ display: 'none' }}
-          />
-        </div>
-
-        {/* Barra de progreso */}
-        {currentSong && (
-          <div className="space-y-1">
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, #00ffff 0%, #00ffff ${(currentTime / duration) * 100}%, #374151 ${(currentTime / duration) * 100}%, #374151 100%)`
-              }}
-            />
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Zona de arrastrar y soltar */}
-        {!currentSong && (
-          <div className="text-center py-4 border-2 border-dashed border-gray-600 rounded-lg">
-            <p className="text-xs text-gray-400">
-              Arrastra un archivo de audio aquí o haz clic en el botón de cargar
-            </p>
-          </div>
-        )}
-      </div>
+      </RetroPanel>
     </div>
   );
 }

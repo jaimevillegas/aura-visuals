@@ -8,7 +8,7 @@ import { hexToRgb, lerpColor } from '@/lib/utils/colorUtils'
 
 export function PlasmaEffect() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { sensitivity, activePalette } = useVisualizerStore()
+  const { activePalette, getVisualizerParams } = useVisualizerStore()
   const palette = COLOR_PALETTES[activePalette]
 
   useEffect(() => {
@@ -19,11 +19,15 @@ export function PlasmaEffect() {
     if (!ctx) return
 
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      canvas.width = canvas.parentElement?.clientWidth || window.innerWidth
+      canvas.height = canvas.parentElement?.clientHeight || window.innerHeight
     }
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
+
+    // Get visualizer parameters (default sensitivity)
+    const params = getVisualizerParams('plasmaeffect')
+    const sensitivity = params.sensitivity || 1.0
 
     let animationFrameId: number
     let time = 0
@@ -109,7 +113,7 @@ export function PlasmaEffect() {
       window.removeEventListener('resize', resizeCanvas)
       cancelAnimationFrame(animationFrameId)
     }
-  }, [sensitivity, activePalette, palette])
+  }, [activePalette, palette, getVisualizerParams])
 
   return (
     <canvas
@@ -118,8 +122,8 @@ export function PlasmaEffect() {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100vw',
-        height: '100vh',
+        width: '100%',
+        height: '100%',
         background: '#000',
       }}
     />

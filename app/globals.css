@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Rajdhani:wght@300;400;500;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -7,6 +8,29 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Retro Color Palette */
+  --color-retro-dark: #0a0a0f;
+  --color-retro-panel: #1a1a2e;
+  --color-retro-accent: #16213e;
+  --color-retro-border: #2a2a3e;
+
+  /* Neon Colors */
+  --color-neon-cyan: #00ffff;
+  --color-neon-pink: #ff006e;
+  --color-neon-purple: #8b00ff;
+  --color-neon-orange: #ff6b35;
+  --color-neon-green: #00ff41;
+
+  /* LED Indicator Colors */
+  --color-led-red: #ff0040;
+  --color-led-yellow: #ffdd00;
+  --color-led-green: #00ff41;
+
+  /* Retro Fonts */
+  --font-display: 'Orbitron', var(--font-geist-sans);
+  --font-ui: 'Rajdhani', var(--font-geist-sans);
+  --font-mono-retro: 'Space Mono', var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -118,4 +142,309 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ============================================
+   RETRO/TRON ANIMATIONS & EFFECTS
+   ============================================ */
+
+/* Neon pulse animation for glowing elements */
+@keyframes neon-pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.85;
+    filter: brightness(1.2);
+  }
+}
+
+/* Neon glow animation (stronger pulse) */
+@keyframes neon-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 30px currentColor;
+  }
+  50% {
+    text-shadow:
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 15px currentColor;
+  }
+}
+
+/* CRT scanline effect */
+@keyframes scanlines {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 4px;
+  }
+}
+
+/* Flicker effect for retro displays */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  41%, 43% { opacity: 0.95; }
+  45%, 47% { opacity: 0.98; }
+  49%, 51% { opacity: 0.96; }
+}
+
+/* Button press animation */
+@keyframes button-press {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(0.98) translateY(2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Slide panel animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES FOR RETRO EFFECTS
+   ============================================ */
+
+/* Text glow effects */
+.text-glow-cyan {
+  text-shadow:
+    0 0 10px rgba(0, 255, 255, 0.8),
+    0 0 20px rgba(0, 255, 255, 0.6),
+    0 0 30px rgba(0, 255, 255, 0.4);
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.text-glow-pink {
+  text-shadow:
+    0 0 10px rgba(255, 0, 110, 0.8),
+    0 0 20px rgba(255, 0, 110, 0.6),
+    0 0 30px rgba(255, 0, 110, 0.4);
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.text-glow-orange {
+  text-shadow:
+    0 0 10px rgba(255, 107, 53, 0.8),
+    0 0 20px rgba(255, 107, 53, 0.6),
+    0 0 30px rgba(255, 107, 53, 0.4);
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.text-glow-green {
+  text-shadow:
+    0 0 10px rgba(0, 255, 65, 0.8),
+    0 0 20px rgba(0, 255, 65, 0.6),
+    0 0 30px rgba(0, 255, 65, 0.4);
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* Scanline overlay */
+.scanlines {
+  position: relative;
+}
+
+.scanlines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 255, 0.03) 2px,
+    rgba(0, 255, 255, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: scanlines 8s linear infinite;
+}
+
+/* Grid pattern background */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to right, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* CRT screen curve effect (subtle) */
+.crt-curve {
+  border-radius: 4px;
+}
+
+/* Bevel effect for 3D panels */
+.bevel {
+  box-shadow:
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Inner glow for panels */
+.inner-glow {
+  box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+/* Neon border glow */
+.border-glow-cyan {
+  border-color: var(--color-neon-cyan);
+  box-shadow:
+    0 0 10px rgba(0, 255, 255, 0.5),
+    0 0 20px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.border-glow-pink {
+  border-color: var(--color-neon-pink);
+  box-shadow:
+    0 0 10px rgba(255, 0, 110, 0.5),
+    0 0 20px rgba(255, 0, 110, 0.3),
+    inset 0 0 10px rgba(255, 0, 110, 0.1);
+}
+
+.border-glow-orange {
+  border-color: var(--color-neon-orange);
+  box-shadow:
+    0 0 10px rgba(255, 107, 53, 0.5),
+    0 0 20px rgba(255, 107, 53, 0.3),
+    inset 0 0 10px rgba(255, 107, 53, 0.1);
+}
+
+/* Retract panel animation */
+.panel-retract {
+  animation: slide-down 0.3s ease-out forwards;
+}
+
+.panel-expand {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+/* ============================================
+   OPTIMIZED VERSIONS FOR BETTER PERFORMANCE
+   ============================================ */
+
+/* Optimized bevel - single shadow instead of double */
+.bevel-optimized {
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+/* Optimized border glow - single layer instead of triple */
+.border-glow-cyan-optimized {
+  border-color: var(--color-neon-cyan);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.border-glow-pink-optimized {
+  border-color: var(--color-neon-pink);
+  box-shadow: 0 0 8px rgba(255, 0, 110, 0.4);
+}
+
+.border-glow-orange-optimized {
+  border-color: var(--color-neon-orange);
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.4);
+}
+
+/* Disable animations on elements with will-change for better performance */
+.performance-optimized {
+  will-change: auto;
+  animation: none;
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR STYLES
+   ============================================ */
+
+/* Scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(42, 42, 62, 0.3);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 255, 255, 0.7);
+}
+
+/* Green variant for LCD components */
+.scrollbar-green::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-green::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+}
+
+.scrollbar-green::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 65, 0.3);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  transition: background 0.2s ease;
+}
+
+.scrollbar-green::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 65, 0.5);
+  border-color: rgba(0, 255, 65, 0.4);
+}
+
+.scrollbar-green::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 255, 65, 0.7);
+  border-color: rgba(0, 255, 65, 0.6);
+}
+
+/* Firefox scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(42, 42, 62, 0.3);
+}
+
+.scrollbar-green {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 65, 0.3) rgba(0, 0, 0, 0.5);
 }

@@ -32,14 +32,14 @@ export function EnergyParticles() {
     if (!ctx) return
 
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      canvas.width = canvas.parentElement?.clientWidth || window.innerWidth
+      canvas.height = canvas.parentElement?.clientHeight || window.innerHeight
     }
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
 
     let animationFrameId: number
-    let emitters: { x: number; y: number; angle: number }[] = []
+    const emitters: { x: number; y: number; angle: number }[] = []
 
     // Create energy emitters around the screen
     const createEmitters = () => {
@@ -117,7 +117,7 @@ export function EnergyParticles() {
         }
 
         // Draw emitter glow
-        const emitterSize = 15 + freqValue * 25
+        const emitterSize = Math.max(1, 15 + freqValue * 25)
         const emitterGradient = ctx.createRadialGradient(
           emitter.x, emitter.y, 0,
           emitter.x, emitter.y, emitterSize
@@ -168,8 +168,8 @@ export function EnergyParticles() {
         const lifeFactor = Math.sin(lifeProgress * Math.PI)
         const alpha = lifeFactor * (0.4 + freqValue * 0.6)
 
-        // Size
-        const size = particle.size * particleSize * (0.5 + freqValue * 1.5) * lifeFactor
+        // Size (ensure it's always positive)
+        const size = Math.max(0.1, particle.size * particleSize * (0.5 + freqValue * 1.5) * lifeFactor)
 
         // Color
         const colorIndex = Math.floor(particle.hue * palette.length)
@@ -178,7 +178,7 @@ export function EnergyParticles() {
         // Draw particle with trail
         const gradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
-          particle.x, particle.y, size * 4
+          particle.x, particle.y, Math.max(0.1, size * 4)
         )
         gradient.addColorStop(0, hexToRgba(color, alpha))
         gradient.addColorStop(0.3, hexToRgba(color, alpha * 0.6))
@@ -193,7 +193,7 @@ export function EnergyParticles() {
         if (particle.energy > 0.7) {
           ctx.fillStyle = hexToRgba('#ffffff', alpha * 0.9)
           ctx.beginPath()
-          ctx.arc(particle.x, particle.y, size * 0.8, 0, Math.PI * 2)
+          ctx.arc(particle.x, particle.y, Math.max(0.1, size * 0.8), 0, Math.PI * 2)
           ctx.fill()
         }
 
@@ -218,7 +218,7 @@ export function EnergyParticles() {
       }
 
       // Central energy core
-      const coreSize = 60 + high * 100 * sensitivity
+      const coreSize = Math.max(1, 60 + high * 100 * sensitivity)
       const coreGradient = ctx.createRadialGradient(
         centerX, centerY, 0,
         centerX, centerY, coreSize
@@ -263,8 +263,8 @@ export function EnergyParticles() {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100vw',
-        height: '100vh',
+        width: '100%',
+        height: '100%',
         background: '#000',
       }}
     />

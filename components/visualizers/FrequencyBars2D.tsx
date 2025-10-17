@@ -11,6 +11,9 @@ export function FrequencyBars2D() {
   const { activePalette, getVisualizerParams } = useVisualizerStore()
   const palette = COLOR_PALETTES[activePalette]
 
+  // Smoothed values for each bar
+  const smoothedValuesRef = useRef<number[]>([])
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -20,8 +23,8 @@ export function FrequencyBars2D() {
 
     // Ajustar tamaño del canvas
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      canvas.width = canvas.parentElement?.clientWidth || window.innerWidth
+      canvas.height = canvas.parentElement?.clientHeight || window.innerHeight
     }
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
@@ -49,25 +52,43 @@ export function FrequencyBars2D() {
         return
       }
 
-      const barWidth = canvas.width / barCount
-      const dataPointsPerBar = Math.floor(rawData.length / 2 / barCount)
+      // Initialize smoothed values array if needed
+      if (smoothedValuesRef.current.length !== barCount) {
+        smoothedValuesRef.current = new Array(barCount).fill(0)
+      }
+
+      const barWidth = (canvas.width / barCount) * (1 - barSpacing)
+      const barGap = (canvas.width / barCount) * barSpacing
+
+      // Use only lower frequencies for better visual effect (first half to 3/4 of data)
+      const usableDataLength = Math.floor(rawData.length * 0.75)
+      const dataPointsPerBar = Math.floor(usableDataLength / barCount)
 
       for (let i = 0; i < barCount; i++) {
         // Calcular promedio de frecuencias para esta barra
         const start = i * dataPointsPerBar
         const end = start + dataPointsPerBar
-        const dataChunk = rawData.slice(start, Math.min(end, rawData.length / 2))
+        const dataChunk = rawData.slice(start, Math.min(end, usableDataLength))
 
         if (dataChunk.length === 0) continue
 
-        const average = dataChunk.reduce((a, b) => a + b, 0) / dataChunk.length
-        const normalizedValue = average / 255
+        // Calculate average with proper validation
+        const sum = dataChunk.reduce((acc, val) => acc + (val || 0), 0)
+        const average = sum / dataChunk.length
+        let normalizedValue = Math.min(average / 255, 1.0)
 
-        // Altura de la barra con boost para frecuencias altas
-        const boost = 1 + (i / barCount) * 2
-        const barHeight = normalizedValue * boost * canvas.height * 0.8 * sensitivity
+        // Apply logarithmic scale for better visual distribution
+        normalizedValue = Math.pow(normalizedValue, 0.8)
 
-        const x = i * barWidth
+        // Apply smoothing
+        const targetValue = normalizedValue * sensitivity
+        smoothedValuesRef.current[i] = smoothedValuesRef.current[i] * smoothing + targetValue * (1 - smoothing)
+
+        // Calculate bar height (max 90% of canvas height)
+        const maxHeight = canvas.height * 0.9
+        const barHeight = Math.max(2, smoothedValuesRef.current[i] * maxHeight)
+
+        const x = i * (barWidth + barGap)
         const y = canvas.height - barHeight
 
         // Gradiente vertical para cada barra
@@ -85,27 +106,19 @@ export function FrequencyBars2D() {
         const finalColor = lerpColor(color1, color2, lerpFactor)
 
         // Gradiente de oscuro a brillante
-        const brightnessFactor = 1.5
-        gradient.addColorStop(0, multiplyColor(finalColor, 0.5))
+        gradient.addColorStop(0, multiplyColor(finalColor, 0.3))
         gradient.addColorStop(0.5, finalColor)
-        gradient.addColorStop(1, multiplyColor(finalColor, 1 + brightnessFactor))
+        gradient.addColorStop(1, multiplyColor(finalColor, 1.8))
 
+        // Draw main bar
         ctx.fillStyle = gradient
-        ctx.fillRect(x, y, barWidth - 2, barHeight)
+        ctx.fillRect(x, y, barWidth, barHeight)
 
         // Borde brillante en la parte superior
-        ctx.fillStyle = multiplyColor(finalColor, 2)
-        ctx.fillRect(x, y, barWidth - 2, 3)
-
-        // Reflejo
-        ctx.globalAlpha = 0.2
-        ctx.save()
-        ctx.scale(1, -1)
-        ctx.translate(0, -canvas.height)
-        ctx.fillStyle = gradient
-        ctx.fillRect(x, y, barWidth - 2, barHeight * 0.5)
-        ctx.restore()
-        ctx.globalAlpha = 1
+        if (barHeight > 5) {
+          ctx.fillStyle = multiplyColor(finalColor, 2.5)
+          ctx.fillRect(x, y, barWidth, Math.min(4, barHeight * 0.1))
+        }
       }
 
       animationFrameId = requestAnimationFrame(render)
@@ -126,8 +139,8 @@ export function FrequencyBars2D() {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100vw',
-        height: '100vh',
+        width: '100%',
+        height: '100%',
         background: '#000',
       }}
     />

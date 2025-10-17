@@ -11,16 +11,21 @@ export function KaleidoscopeViz() {
   const { activePalette, getVisualizerParams } = useVisualizerStore()
   const palette = COLOR_PALETTES[activePalette]
 
+  // Cache for pre-calculated values
+  const rayDataCache = useRef<Array<{ angle: number; cos: number; sin: number }>>([])
+  const paletteRGBACache = useRef<string[]>([])
+  const currentPaletteRef = useRef<string>(activePalette)
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      canvas.width = canvas.parentElement?.clientWidth || window.innerWidth
+      canvas.height = canvas.parentElement?.clientHeight || window.innerHeight
     }
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
@@ -35,21 +40,35 @@ export function KaleidoscopeViz() {
       const rayCount = params.rayCount || 50
       const rayLength = params.rayLength || 0.7
       const rotationSpeed = params.rotationSpeed || 1.0
-      const glowIntensity = params.glowIntensity || 1.0
-      const centralPulse = params.centralPulse || 1.0
-      const ringCount = params.ringCount || 3
-      const trailFade = params.trailFade || 0.05
       const sensitivity = params.sensitivity || 1.0
 
       const { rawData, low, mid, high } = useAudioStore.getState().frequencyData
 
-      // Fondo con trail fade personalizable
-      ctx.fillStyle = `rgba(0, 0, 0, ${trailFade})`
+      // Fondo con trail fade más agresivo para mejor rendimiento
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       if (!rawData || rawData.length === 0) {
         animationFrameId = requestAnimationFrame(render)
         return
+      }
+
+      // Re-calculate palette colors if palette changed
+      if (currentPaletteRef.current !== activePalette || paletteRGBACache.current.length !== palette.length) {
+        currentPaletteRef.current = activePalette
+        paletteRGBACache.current = palette.map(color => hexToRgba(color, 1.0))
+      }
+
+      // Pre-calculate ray angles and trig values
+      if (rayDataCache.current.length !== rayCount) {
+        rayDataCache.current = Array.from({ length: rayCount }, (_, i) => {
+          const angle = (i / rayCount) * Math.PI * 0.5
+          return {
+            angle,
+            cos: Math.cos(angle),
+            sin: Math.sin(angle)
+          }
+        })
       }
 
       const centerX = canvas.width / 2
@@ -59,58 +78,58 @@ export function KaleidoscopeViz() {
       // Incrementar rotación basada en mid frequencies
       rotation += (0.01 + mid * 0.05) * rotationSpeed
 
+      const totalSegments = segments * 2
+      const segmentAngle = (Math.PI * 2) / totalSegments
+      const highBoost = 0.5 + high * 0.5
+
       ctx.save()
       ctx.translate(centerX, centerY)
 
       // Dibujar cada segmento con simetría
-      for (let seg = 0; seg < segments * 2; seg++) {
+      for (let seg = 0; seg < totalSegments; seg++) {
+        const angle = segmentAngle * seg + rotation
+        const flipY = seg % 2 === 1
+
         ctx.save()
-
-        // Rotar al ángulo del segmento
-        const angle = (Math.PI * 2 / (segments * 2)) * seg + rotation
         ctx.rotate(angle)
+        if (flipY) ctx.scale(1, -1)
 
-        // Simetría especular para efecto kaleidoscopio
-        if (seg % 2 === 1) {
-          ctx.scale(1, -1)
-        }
-
-        // Dibujar rayos radiales basados en frecuencias
+        // Batch drawing with a single path for better performance
         for (let i = 0; i < rayCount; i++) {
           const progress = i / rayCount
-          const freqIndex = Math.floor(progress * (rawData.length / 2))
-          const freqValue = (rawData[freqIndex] || 0) / 255
+          const freqIndex = Math.floor(progress * (rawData.length * 0.5))
+          const freqValue = Math.min((rawData[freqIndex] || 0) / 255, 1.0)
 
-          // Calcular posición del rayo
-          const rayAngle = progress * Math.PI * 0.5 // Solo 1/4 del círculo
+          if (freqValue < 0.05) continue // Skip very low values
+
+          const rayData = rayDataCache.current[i]
           const distance = maxRadius * (0.3 + freqValue * rayLength * sensitivity)
-
-          const x = Math.cos(rayAngle) * distance
-          const y = Math.sin(rayAngle) * distance
+          const x = rayData.cos * distance
+          const y = rayData.sin * distance
 
           // Color basado en frecuencia
           const colorIndex = Math.floor(progress * (palette.length - 1))
-          const color = palette[colorIndex]
+          const baseColor = paletteRGBACache.current[colorIndex]
 
           // Intensidad basada en audio
-          const intensity = 0.3 + freqValue * 0.7 * glowIntensity
-          const alpha = intensity * (0.5 + high * 0.5)
+          const intensity = 0.3 + freqValue * 0.7
+          const alpha = intensity * highBoost
+
+          // Extract RGB from cached color and apply alpha
+          const rgbaColor = baseColor.replace('1)', `${alpha})`)
 
           // Dibujar línea radial
-          ctx.strokeStyle = hexToRgba(color, alpha)
-          ctx.lineWidth = 1 + freqValue * 3 * sensitivity
+          ctx.strokeStyle = rgbaColor
+          ctx.lineWidth = 1 + freqValue * 2 * sensitivity
           ctx.beginPath()
           ctx.moveTo(0, 0)
           ctx.lineTo(x, y)
           ctx.stroke()
 
-          // Punto brillante al final
-          if (freqValue > 0.3) {
-            const pointSize = 3 + freqValue * 5 * glowIntensity
-            const gradient = ctx.createRadialGradient(x, y, 0, x, y, pointSize * 2)
-            gradient.addColorStop(0, hexToRgba(color, alpha))
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
-            ctx.fillStyle = gradient
+          // Solo dibujar puntos brillantes en valores muy altos (optimización)
+          if (freqValue > 0.5) {
+            const pointSize = 2 + freqValue * 3
+            ctx.fillStyle = rgbaColor
             ctx.beginPath()
             ctx.arc(x, y, pointSize, 0, Math.PI * 2)
             ctx.fill()
@@ -122,29 +141,21 @@ export function KaleidoscopeViz() {
 
       ctx.restore()
 
-      // Círculo central pulsante (controlado por centralPulse)
-      const centralSize = (20 + low * 40 * sensitivity) * centralPulse
+      // Círculo central pulsante simplificado
+      const centralSize = 20 + low * 40 * sensitivity
       const centralGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, centralSize)
-      centralGradient.addColorStop(0, hexToRgba(palette[0], 0.8))
-      centralGradient.addColorStop(0.5, hexToRgba(palette[1], 0.4))
+
+      const color0 = paletteRGBACache.current[0].replace('1)', '0.8)')
+      const color1 = paletteRGBACache.current[Math.min(1, palette.length - 1)].replace('1)', '0.4)')
+
+      centralGradient.addColorStop(0, color0)
+      centralGradient.addColorStop(0.5, color1)
       centralGradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
 
       ctx.fillStyle = centralGradient
       ctx.beginPath()
       ctx.arc(centerX, centerY, centralSize, 0, Math.PI * 2)
       ctx.fill()
-
-      // Anillos concéntricos pulsantes (número controlado por ringCount)
-      for (let ring = 1; ring <= ringCount; ring++) {
-        const ringRadius = maxRadius * (0.3 + ring * 0.15) * (1 + mid * 0.2)
-        const alpha = (1 - ring / (ringCount + 1)) * 0.3
-
-        ctx.strokeStyle = hexToRgba(palette[ring % palette.length], alpha)
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2)
-        ctx.stroke()
-      }
 
       animationFrameId = requestAnimationFrame(render)
     }
@@ -164,8 +175,8 @@ export function KaleidoscopeViz() {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100vw',
-        height: '100vh',
+        width: '100%',
+        height: '100%',
         background: '#000',
       }}
     />

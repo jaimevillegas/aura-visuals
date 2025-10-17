@@ -13,9 +13,18 @@ export default function VisualizerScene() {
   const ActiveVisualizer = VISUALIZER_REGISTRY[activeVisualizerId as keyof typeof VISUALIZER_REGISTRY]?.component
 
   // Todos los visualizadores son ahora 2D y se renderizan directamente
+  // Container ocupa todo el espacio disponible (sin solapar el panel)
   return (
-    <Suspense fallback={<div style={{ color: 'white' }}>Loading...</div>}>
-      {ActiveVisualizer ? <ActiveVisualizer /> : null}
-    </Suspense>
+    <div
+      className="absolute inset-0"
+      style={{
+        contain: 'layout style paint',
+        willChange: 'transform'
+      }}
+    >
+      <Suspense fallback={<div style={{ color: 'white' }}>Loading...</div>}>
+        {ActiveVisualizer ? <ActiveVisualizer /> : null}
+      </Suspense>
+    </div>
   )
 }

@@ -27,20 +27,11 @@ export interface VisualizerParameter {
 // 3. Configuraciones de parámetros por visualizador
 export const VISUALIZER_CONFIGS: Record<string, VisualizerParameter[]> = {
   kaleidoscope: [
-    { name: 'segments', label: 'Segments', min: 4, max: 16, step: 1, defaultValue: 8, category: 'visual' },
-    { name: 'rayCount', label: 'Ray Count', min: 20, max: 100, step: 10, defaultValue: 50, category: 'visual' },
+    { name: 'segments', label: 'Segments', min: 4, max: 12, step: 1, defaultValue: 6, category: 'visual' },
+    { name: 'rayCount', label: 'Ray Count', min: 20, max: 80, step: 10, defaultValue: 40, category: 'visual' },
     { name: 'rayLength', label: 'Ray Length', min: 0.3, max: 1.0, step: 0.05, defaultValue: 0.7, category: 'visual' },
     { name: 'rotationSpeed', label: 'Rotation Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
-    { name: 'glowIntensity', label: 'Glow Intensity', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'centralPulse', label: 'Central Pulse', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'ringCount', label: 'Ring Count', min: 0, max: 5, step: 1, defaultValue: 3, category: 'visual' },
-    { name: 'trailFade', label: 'Trail Fade', min: 0.01, max: 0.2, step: 0.01, defaultValue: 0.05, category: 'visual' },
     { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-  ],
-  oscilloscope: [
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'trailLength', label: 'Trail Length', min: 0, max: 1, step: 0.05, defaultValue: 0.5, category: 'visual' },
-    { name: 'waveAmplitude', label: 'Wave Amplitude', min: 0.3, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
   ],
   bars2d: [
     { name: 'barCount', label: 'Bar Count', min: 32, max: 256, step: 16, defaultValue: 64, category: 'visual' },
@@ -60,12 +51,6 @@ export const VISUALIZER_CONFIGS: Record<string, VisualizerParameter[]> = {
     { name: 'rotationSpeed', label: 'Rotation Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
     { name: 'waveAmplitude', label: 'Wave Amplitude', min: 0.3, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
   ],
-  radialwaves: [
-    { name: 'waveCount', label: 'Wave Count', min: 3, max: 12, step: 1, defaultValue: 6, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'waveAmplitude', label: 'Wave Amplitude', min: 0.3, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'waveSpeed', label: 'Wave Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
-  ],
   circularwaveform: [
     { name: 'radius', label: 'Circle Radius', min: 50, max: 300, step: 10, defaultValue: 150, category: 'visual' },
     { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
@@ -78,35 +63,17 @@ export const VISUALIZER_CONFIGS: Record<string, VisualizerParameter[]> = {
     { name: 'particleSize', label: 'Particle Size', min: 0.5, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
     { name: 'bloomIntensity', label: 'Bloom Intensity', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
   ],
-  fractalrings: [
-    { name: 'ringCount', label: 'Ring Count', min: 3, max: 15, step: 1, defaultValue: 8, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'rotationSpeed', label: 'Rotation Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
-    { name: 'pulseIntensity', label: 'Pulse Intensity', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
-  ],
   geometricmandala: [
     { name: 'petalCount', label: 'Petal Count', min: 6, max: 24, step: 1, defaultValue: 12, category: 'visual' },
     { name: 'layers', label: 'Layer Count', min: 2, max: 8, step: 1, defaultValue: 4, category: 'visual' },
     { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
     { name: 'rotationSpeed', label: 'Rotation Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
   ],
-  tunnelvision: [
-    { name: 'ringCount', label: 'Ring Count', min: 10, max: 50, step: 5, defaultValue: 30, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'tunnelSpeed', label: 'Tunnel Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
-    { name: 'perspective', label: 'Perspective Depth', min: 0.5, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
-  ],
   starfield: [
     { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
     { name: 'particleSize', label: 'Star Size', min: 0.5, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
     { name: 'rotationSpeed', label: 'Rotation Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
     { name: 'bloomIntensity', label: 'Bloom Intensity', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
-  ],
-  waveformgrid: [
-    { name: 'gridSize', label: 'Grid Size', min: 10, max: 40, step: 2, defaultValue: 20, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'waveHeight', label: 'Wave Height', min: 0.3, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'perspective', label: 'Perspective', min: 0.5, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
   ],
   nebulacloud: [
     { name: 'particleCount', label: 'Particle Count', min: 400, max: 1200, step: 100, defaultValue: 800, category: 'visual' },
@@ -115,37 +82,11 @@ export const VISUALIZER_CONFIGS: Record<string, VisualizerParameter[]> = {
     { name: 'bloomIntensity', label: 'Bloom Intensity', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
     { name: 'swirlSpeed', label: 'Swirl Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
   ],
-  cosmicdust: [
-    { name: 'particleCount', label: 'Particle Count', min: 800, max: 2000, step: 100, defaultValue: 1500, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'particleSize', label: 'Particle Size', min: 0.5, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'bloomIntensity', label: 'Bloom Intensity', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'rotationSpeed', label: 'Rotation Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
-  ],
   energyparticles: [
     { name: 'emitterCount', label: 'Emitter Count', min: 3, max: 12, step: 1, defaultValue: 6, category: 'visual' },
     { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
     { name: 'particleSize', label: 'Particle Size', min: 0.5, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
     { name: 'gravityStrength', label: 'Gravity Strength', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
-  ],
-  meteorshower: [
-    { name: 'meteorCount', label: 'Meteor Count', min: 20, max: 100, step: 5, defaultValue: 50, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'meteorSpeed', label: 'Meteor Speed', min: 0.3, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'motion' },
-    { name: 'trailLength', label: 'Trail Length', min: 0.3, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
-  ],
-  galaxyspiral: [
-    { name: 'starCount', label: 'Star Count', min: 1000, max: 3000, step: 200, defaultValue: 2000, category: 'visual' },
-    { name: 'spiralArms', label: 'Spiral Arms', min: 2, max: 8, step: 1, defaultValue: 4, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'rotationSpeed', label: 'Rotation Speed', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'motion' },
-  ],
-  aurorawaves: [
-    { name: 'particleCount', label: 'Particle Count', min: 300, max: 900, step: 50, defaultValue: 600, category: 'visual' },
-    { name: 'sensitivity', label: 'Audio Sensitivity', min: 0.1, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'audio' },
-    { name: 'particleSize', label: 'Particle Size', min: 0.5, max: 3.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'bloomIntensity', label: 'Bloom Intensity', min: 0, max: 2, step: 0.1, defaultValue: 1.0, category: 'visual' },
-    { name: 'waveAmplitude', label: 'Wave Amplitude', min: 0.3, max: 2.0, step: 0.1, defaultValue: 1.0, category: 'visual' },
   ],
 };
 
