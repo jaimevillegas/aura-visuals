@@ -123,9 +123,9 @@ const getDefaultParams = (visualizerId: string): VisualizerParams => {
 export const useVisualizerStore = create<VisualizerState>((set, get) => ({
   // Valores iniciales
   activePalette: 'neon',
-  activeVisualizer: 'kaleidoscope',
+  activeVisualizer: 'symmetrymirror',
   visualizerParams: {
-    kaleidoscope: getDefaultParams('kaleidoscope'),
+    symmetrymirror: getDefaultParams('symmetrymirror'),
   },
 
   // Funciones para actualizar el estado
