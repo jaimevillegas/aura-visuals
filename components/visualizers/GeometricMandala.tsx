@@ -97,15 +97,15 @@ export function GeometricMandala() {
           const gradient = ctx.createLinearGradient(0, 0, 0, petalLength)
           const colorIndex = (layer + i) % palette.length
           gradient.addColorStop(0, hexToRgba(palette[colorIndex], 0.1))
-          gradient.addColorStop(0.5, hexToRgba(palette[colorIndex], 0.4 + freqValue * 0.4))
+          gradient.addColorStop(0.5, hexToRgba(palette[colorIndex], 0.4 + freqValue * 0.4 * sensitivity))
           gradient.addColorStop(1, hexToRgba(palette[(colorIndex + 1) % palette.length], 0.2))
 
           ctx.fillStyle = gradient
           ctx.fill()
 
           // Outline
-          ctx.strokeStyle = hexToRgba(palette[colorIndex], 0.6 + freqValue * 0.4)
-          ctx.lineWidth = 1 + freqValue * 2
+          ctx.strokeStyle = hexToRgba(palette[colorIndex], 0.6 + freqValue * 0.4 * sensitivity)
+          ctx.lineWidth = 1 + freqValue * 2 * sensitivity
           ctx.stroke()
 
           ctx.restore()
@@ -115,7 +115,7 @@ export function GeometricMandala() {
         ctx.beginPath()
         ctx.arc(0, 0, layerRadius * 0.8, 0, Math.PI * 2)
         const colorIndex = layer % palette.length
-        ctx.strokeStyle = hexToRgba(palette[colorIndex], 0.3 + freqValue * 0.3)
+        ctx.strokeStyle = hexToRgba(palette[colorIndex], 0.3 + freqValue * 0.3 * sensitivity)
         ctx.lineWidth = 1
         ctx.stroke()
 
@@ -127,7 +127,7 @@ export function GeometricMandala() {
       // Draw decorative dots at petal tips
       for (let i = 0; i < petalCount * 2; i++) {
         const angle = (i / (petalCount * 2)) * Math.PI * 2 + rotation
-        const distance = maxRadius * (1 + high * 0.2)
+        const distance = maxRadius * (1 + high * 0.2 * sensitivity)
         const x = centerX + Math.cos(angle) * distance
         const y = centerY + Math.sin(angle) * distance
 
@@ -137,7 +137,7 @@ export function GeometricMandala() {
 
         ctx.fillStyle = dotGradient
         ctx.beginPath()
-        ctx.arc(x, y, 3 + high * 5, 0, Math.PI * 2)
+        ctx.arc(x, y, 3 + high * 5 * sensitivity, 0, Math.PI * 2)
         ctx.fill()
       }
 

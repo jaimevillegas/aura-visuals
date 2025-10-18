@@ -39,7 +39,7 @@ export const useAudioStore = create<AudioState>((set) => ({
       // Aseguramos que rawData siempre sea un Uint8Array válido
       rawData: data.rawData || initialFrequencyData
     }
-  }),
+  }, false), // OPTIMIZED: false = don't notify subscribers, visualizers read via getState()
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentSong: (song) => set({ currentSong: song }),
   setCurrentTime: (time) => set({ currentTime: time }),

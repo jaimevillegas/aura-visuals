@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, memo } from 'react'
+import { useMemo, memo, useCallback, useRef, useState, useEffect } from 'react'
 import * as Slider from '@radix-ui/react-slider'
 import { cn } from '@/lib/utils/cn'
+import { throttle } from '@/lib/utils/throttle'
 
 interface AnalogSliderProps {
   label: string
@@ -36,16 +37,38 @@ export const AnalogSlider = memo(function AnalogSlider({
   showLEDs = true,
   className,
 }: AnalogSliderProps) {
-  // Memoize calculations
+  // Local state for immediate UI updates
+  const [localValue, setLocalValue] = useState(value)
+
+  // Sync local value when prop value changes externally
+  useEffect(() => {
+    setLocalValue(value)
+  }, [value])
+
+  // Throttled onChange for performance (33ms = ~30 updates/sec)
+  const throttledOnChangeRef = useRef<((val: number) => void) | null>(null)
+
+  if (!throttledOnChangeRef.current) {
+    throttledOnChangeRef.current = throttle(onChange, 33)
+  }
+
+  const handleValueChange = useCallback((newValues: number[]) => {
+    const newValue = newValues[0]
+    setLocalValue(newValue) // Update UI immediately
+    throttledOnChangeRef.current?.(newValue) // Throttled store update
+  }, [])
+
+  // Memoize calculations - use localValue for immediate UI feedback
   const { activeLEDs, displayValue } = useMemo(() => {
-    const pct = ((value - min) / (max - min)) * 100
+    const pct = ((localValue - min) / (max - min)) * 100
     const ledCount = 10
     const active = Math.ceil((pct / 100) * ledCount)
-    const display = value.toFixed(step < 1 ? 1 : 0)
+    const display = localValue.toFixed(step < 1 ? 1 : 0)
     return { activeLEDs: active, displayValue: display }
-  }, [value, min, max, step])
+  }, [localValue, min, max, step])
 
   // Memoize LED configurations to avoid recalculating on every render
+  // OPTIMIZED: Removed shadows from individual LEDs for performance
   const ledConfigs = useMemo(() => {
     const ledCount = 10
     return Array.from({ length: ledCount }, (_, index) => {
@@ -54,9 +77,9 @@ export const AnalogSlider = memo(function AnalogSlider({
 
       if (isActive) {
         const ledPercentage = (index / ledCount) * 100
-        if (ledPercentage < 60) colorClass = 'bg-neon-green shadow-[0_0_4px_rgba(0,255,65,0.8)]'
-        else if (ledPercentage < 85) colorClass = 'bg-led-yellow shadow-[0_0_4px_rgba(255,221,0,0.8)]'
-        else colorClass = 'bg-led-red shadow-[0_0_4px_rgba(255,0,85,0.8)]'
+        if (ledPercentage < 60) colorClass = 'bg-neon-green'
+        else if (ledPercentage < 85) colorClass = 'bg-led-yellow'
+        else colorClass = 'bg-led-red'
       }
 
       return { isActive, colorClass }
@@ -75,8 +98,8 @@ export const AnalogSlider = memo(function AnalogSlider({
       </div>
 
       <Slider.Root
-        value={[value]}
-        onValueChange={(newValue) => onChange(newValue[0])}
+        value={[localValue]}
+        onValueChange={handleValueChange}
         min={min}
         max={max}
         step={step}

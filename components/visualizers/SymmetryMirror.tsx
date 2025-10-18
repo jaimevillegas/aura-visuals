@@ -4,7 +4,6 @@
 import { useRef, useEffect } from 'react'
 import { useAudioStore } from '@/stores/audioStore'
 import { useVisualizerStore, COLOR_PALETTES } from '@/stores/visualizerStore'
-import { hexToRgba } from '@/lib/utils/colorUtils'
 
 export function SymmetryMirror() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -15,7 +14,7 @@ export function SymmetryMirror() {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
     const resizeCanvas = () => {
@@ -26,19 +25,18 @@ export function SymmetryMirror() {
     window.addEventListener('resize', resizeCanvas)
 
     let animationFrameId: number
-    let time = 0
 
     const render = () => {
-      // Get custom parameters for this visualizer
+      // Get parameters
       const params = getVisualizerParams('symmetrymirror')
-      const mirrorSegments = params.mirrorSegments || 4
+      const mirrorAxes = params.mirrorAxes || 2  // 1=horizontal, 2=both, 4=quad
+      const waveScale = params.waveScale || 150
       const sensitivity = params.sensitivity || 1.0
-      const particleSize = params.particleSize || 1.0
-      const bloomIntensity = params.bloomIntensity || 1.0
+      const lineThickness = params.lineThickness || 2
 
-      const { rawData, low, mid } = useAudioStore.getState().frequencyData
+      const { rawData } = useAudioStore.getState().frequencyData
 
-      // Fade effect
+      // Clear with fade
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
@@ -47,51 +45,85 @@ export function SymmetryMirror() {
         return
       }
 
-      time += 0.01
-
       const centerX = canvas.width / 2
       const centerY = canvas.height / 2
 
-      // Draw 4 quadrants with mirror symmetry
-      ctx.save()
+      // Sample points from waveform
+      const sampleCount = Math.min(200, rawData.length)
+      const step = rawData.length / sampleCount
 
-      // Quadrant 1 (top-right)
-      ctx.save()
-      ctx.translate(centerX, centerY)
-      drawPattern(ctx, rawData, palette, time, sensitivity)
-      ctx.restore()
+      // Set line properties globally
+      ctx.lineWidth = lineThickness
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
 
-      // Quadrant 2 (top-left) - mirror X
-      ctx.save()
-      ctx.translate(centerX, centerY)
-      ctx.scale(-1, 1)
-      drawPattern(ctx, rawData, palette, time, sensitivity)
-      ctx.restore()
+      // Draw waveform with mirroring
+      const drawWaveform = (flipX: number, flipY: number) => {
+        ctx.beginPath()
 
-      // Quadrant 3 (bottom-right) - mirror Y
-      ctx.save()
-      ctx.translate(centerX, centerY)
-      ctx.scale(1, -1)
-      drawPattern(ctx, rawData, palette, time, sensitivity)
-      ctx.restore()
+        for (let i = 0; i < sampleCount; i++) {
+          const dataIndex = Math.floor(i * step)
+          const value = (rawData[dataIndex] || 0) / 255
 
-      // Quadrant 4 (bottom-left) - mirror X and Y
-      ctx.save()
-      ctx.translate(centerX, centerY)
-      ctx.scale(-1, -1)
-      drawPattern(ctx, rawData, palette, time, sensitivity)
-      ctx.restore()
+          // Horizontal position
+          const x = ((i / sampleCount) - 0.5) * canvas.width * 0.8
 
-      ctx.restore()
+          // Vertical position based on waveform
+          const y = (value - 0.5) * waveScale * sensitivity
 
-      // Central glow
-      const glowSize = 30 + low * 50 * sensitivity
-      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowSize)
-      gradient.addColorStop(0, hexToRgba(palette[0], 0.6))
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
-      ctx.fillStyle = gradient
+          // Apply mirroring
+          const finalX = centerX + (x * flipX)
+          const finalY = centerY + (y * flipY)
+
+          if (i === 0) {
+            ctx.moveTo(finalX, finalY)
+          } else {
+            ctx.lineTo(finalX, finalY)
+          }
+        }
+
+        // Gradient stroke based on position
+        const gradient = ctx.createLinearGradient(
+          centerX - canvas.width * 0.4,
+          centerY - waveScale,
+          centerX + canvas.width * 0.4,
+          centerY + waveScale
+        )
+
+        palette.forEach((color, index) => {
+          gradient.addColorStop(index / (palette.length - 1), color)
+        })
+
+        ctx.strokeStyle = gradient
+        ctx.globalAlpha = 0.8
+        ctx.stroke()
+        ctx.globalAlpha = 1
+      }
+
+      // Draw based on number of mirror axes (1-6)
+      const axesCount = Math.floor(mirrorAxes)
+
+      for (let i = 0; i < axesCount; i++) {
+        const angle = (Math.PI * 2 / axesCount) * i
+
+        ctx.save()
+        ctx.translate(centerX, centerY)
+        ctx.rotate(angle)
+        ctx.translate(-centerX, -centerY)
+
+        // Draw original waveform
+        drawWaveform(1, 1)
+        // Draw mirrored waveform
+        drawWaveform(1, -1)
+
+        ctx.restore()
+      }
+
+      // Draw center point
+      const centerSize = 4
+      ctx.fillStyle = palette[0]
       ctx.beginPath()
-      ctx.arc(centerX, centerY, glowSize, 0, Math.PI * 2)
+      ctx.arc(centerX, centerY, centerSize, 0, Math.PI * 2)
       ctx.fill()
 
       animationFrameId = requestAnimationFrame(render)
@@ -118,51 +150,4 @@ export function SymmetryMirror() {
       }}
     />
   )
-}
-
-function drawPattern(
-  ctx: CanvasRenderingContext2D,
-  rawData: Uint8Array,
-  palette: string[],
-  time: number,
-  sensitivity: number
-) {
-  const points = 80
-
-  ctx.beginPath()
-
-  for (let i = 0; i < points; i++) {
-    const progress = i / points
-    const freqIndex = Math.floor(progress * (rawData.length / 2))
-    const freqValue = (rawData[freqIndex] || 0) / 255
-
-    const x = progress * 400
-    const wave1 = Math.sin(progress * Math.PI * 2 + time) * 30
-    const wave2 = Math.sin(progress * Math.PI * 4 - time * 2) * 20
-    const audioBoost = freqValue * 100 * sensitivity
-    const y = wave1 + wave2 + audioBoost
-
-    if (i === 0) {
-      ctx.moveTo(x, y)
-    } else {
-      ctx.lineTo(x, y)
-    }
-  }
-
-  // Gradient stroke
-  const gradient = ctx.createLinearGradient(0, -100, 400, 100)
-  palette.forEach((color, index) => {
-    gradient.addColorStop(index / (palette.length - 1), hexToRgba(color, 0.8))
-  })
-
-  ctx.strokeStyle = gradient
-  ctx.lineWidth = 2
-  ctx.stroke()
-
-  // Add glow effect
-  ctx.strokeStyle = gradient
-  ctx.lineWidth = 4
-  ctx.globalAlpha = 0.3
-  ctx.stroke()
-  ctx.globalAlpha = 1
 }

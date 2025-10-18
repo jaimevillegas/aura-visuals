@@ -13,6 +13,8 @@ export function FrequencyBars2D() {
 
   // Smoothed values for each bar
   const smoothedValuesRef = useRef<number[]>([])
+  const prevBarCountRef = useRef<number>(0)
+  const prevSensitivityRef = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -52,9 +54,17 @@ export function FrequencyBars2D() {
         return
       }
 
-      // Initialize smoothed values array if needed
-      if (smoothedValuesRef.current.length !== barCount) {
+      // Initialize or reset smoothed values array if barCount changed
+      if (barCount !== prevBarCountRef.current) {
         smoothedValuesRef.current = new Array(barCount).fill(0)
+        prevBarCountRef.current = barCount
+      }
+
+      // Reset smoothed values if sensitivity changed significantly (to allow immediate response)
+      if (Math.abs(sensitivity - prevSensitivityRef.current) > 0.1) {
+        // Gradually decay old values instead of hard reset for smoother transition
+        smoothedValuesRef.current = smoothedValuesRef.current.map(val => val * 0.5)
+        prevSensitivityRef.current = sensitivity
       }
 
       const barWidth = (canvas.width / barCount) * (1 - barSpacing)
@@ -80,9 +90,14 @@ export function FrequencyBars2D() {
         // Apply logarithmic scale for better visual distribution
         normalizedValue = Math.pow(normalizedValue, 0.8)
 
+        // Apply sensitivity BEFORE smoothing
+        normalizedValue = normalizedValue * sensitivity
+
+        // Clamp to prevent values exceeding 1.0 (which would cause bars to exceed canvas)
+        normalizedValue = Math.min(normalizedValue, 1.0)
+
         // Apply smoothing
-        const targetValue = normalizedValue * sensitivity
-        smoothedValuesRef.current[i] = smoothedValuesRef.current[i] * smoothing + targetValue * (1 - smoothing)
+        smoothedValuesRef.current[i] = smoothedValuesRef.current[i] * smoothing + normalizedValue * (1 - smoothing)
 
         // Calculate bar height (max 90% of canvas height)
         const maxHeight = canvas.height * 0.9

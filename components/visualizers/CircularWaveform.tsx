@@ -49,7 +49,9 @@ export function CircularWaveform() {
 
       const centerX = canvas.width / 2
       const centerY = canvas.height / 2
-      const baseRadius = Math.min(canvas.width, canvas.height) * 0.25
+
+      // Use radius parameter instead of fixed calculation
+      const baseRadius = radius
 
       rotation += 0.005 * rotationSpeed
 
@@ -61,7 +63,8 @@ export function CircularWaveform() {
         const layerRadius = baseRadius * (1 + layerOffset * 0.5)
 
         ctx.beginPath()
-        ctx.lineWidth = 3 - layer
+        // Use lineThickness parameter
+        ctx.lineWidth = lineThickness * (1 - layerOffset * 0.5)
 
         const points = Math.min(rawData.length, 256)
         for (let i = 0; i < points; i++) {

@@ -22,6 +22,7 @@ export function NebulaCloud() {
   const particlesRef = useRef<Particle[]>([])
   const { activePalette, getVisualizerParams } = useVisualizerStore()
   const palette = COLOR_PALETTES[activePalette]
+  const prevParticleCountRef = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -37,18 +38,6 @@ export function NebulaCloud() {
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
 
-    // Initialize particles
-    const initParticles = () => {
-      // Get custom parameters for this visualizer
-      const params = getVisualizerParams('nebulacloud')
-      const particleCount = params.particleCount || 800
-
-      particlesRef.current = []
-      for (let i = 0; i < particleCount; i++) {
-        particlesRef.current.push(createParticle(canvas.width, canvas.height))
-      }
-    }
-
     const createParticle = (width: number, height: number): Particle => {
       return {
         x: Math.random() * width,
@@ -62,7 +51,19 @@ export function NebulaCloud() {
       }
     }
 
-    initParticles()
+    // Initialize particles
+    const initParticles = (count: number) => {
+      particlesRef.current = []
+      for (let i = 0; i < count; i++) {
+        particlesRef.current.push(createParticle(canvas.width, canvas.height))
+      }
+      prevParticleCountRef.current = count
+    }
+
+    // Get initial particle count
+    const params = getVisualizerParams('nebulacloud')
+    const initialParticleCount = params.particleCount || 800
+    initParticles(initialParticleCount)
 
     let animationFrameId: number
     let time = 0
@@ -75,6 +76,21 @@ export function NebulaCloud() {
       const particleSize = params.particleSize || 1.0
       const bloomIntensity = params.bloomIntensity || 1.0
       const swirlSpeed = params.swirlSpeed || 1.0
+
+      // Dynamic particle count adjustment
+      if (particleCount !== prevParticleCountRef.current) {
+        const diff = particleCount - particlesRef.current.length
+        if (diff > 0) {
+          // Add particles
+          for (let i = 0; i < diff; i++) {
+            particlesRef.current.push(createParticle(canvas.width, canvas.height))
+          }
+        } else if (diff < 0) {
+          // Remove particles
+          particlesRef.current = particlesRef.current.slice(0, particleCount)
+        }
+        prevParticleCountRef.current = particleCount
+      }
 
       const { rawData, low, mid, high } = useAudioStore.getState().frequencyData
 
@@ -131,17 +147,21 @@ export function NebulaCloud() {
         const lifeFactor = Math.sin(particle.life * Math.PI)
         particle.alpha = (0.3 + freqValue * 0.5) * lifeFactor * bloomIntensity
 
-        // Size based on frequency and life
-        const size = (particle.size + freqValue * 5) * particleSize * (0.5 + lifeFactor * 0.5)
+        // Size based on frequency, life, and particleSize parameter
+        const baseSize = particle.size * particleSize
+        const size = (baseSize + freqValue * 5 * particleSize) * (0.5 + lifeFactor * 0.5)
 
         // Color from palette
         const colorIndex = Math.floor(particle.hue * palette.length)
         const color = palette[colorIndex]
 
+        // Calculate glow radius with bloomIntensity
+        const glowRadius = size * 8 * bloomIntensity
+
         // Draw particle with large soft glow (nebula effect)
         const gradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
-          particle.x, particle.y, size * 8
+          particle.x, particle.y, glowRadius
         )
         gradient.addColorStop(0, hexToRgba(color, particle.alpha))
         gradient.addColorStop(0.2, hexToRgba(color, particle.alpha * 0.6))
@@ -150,14 +170,15 @@ export function NebulaCloud() {
 
         ctx.fillStyle = gradient
         ctx.beginPath()
-        ctx.arc(particle.x, particle.y, size * 8, 0, Math.PI * 2)
+        ctx.arc(particle.x, particle.y, glowRadius, 0, Math.PI * 2)
         ctx.fill()
 
         // Bright core
         if (freqValue > 0.3) {
+          const coreRadius = size * 2 * bloomIntensity
           const coreGradient = ctx.createRadialGradient(
             particle.x, particle.y, 0,
-            particle.x, particle.y, size * 2
+            particle.x, particle.y, coreRadius
           )
           coreGradient.addColorStop(0, hexToRgba('#ffffff', particle.alpha * 0.8))
           coreGradient.addColorStop(0.5, hexToRgba(color, particle.alpha * 0.5))
@@ -165,7 +186,7 @@ export function NebulaCloud() {
 
           ctx.fillStyle = coreGradient
           ctx.beginPath()
-          ctx.arc(particle.x, particle.y, size * 2, 0, Math.PI * 2)
+          ctx.arc(particle.x, particle.y, coreRadius, 0, Math.PI * 2)
           ctx.fill()
         }
       })

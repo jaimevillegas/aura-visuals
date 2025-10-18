@@ -7,12 +7,12 @@ import { useAudioStore } from '@/stores/audioStore';
 import { AudioManager } from '@/lib/audio/AudioManager';
 import { VISUALIZER_REGISTRY } from '@/constants/visualizerRegistry';
 import { AnalogSlider } from '@/components/ui/retro/AnalogSlider';
-import { ChevronDown, ChevronUp, Play, Pause, Square, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { RetroPanel } from '@/components/ui/retro/RetroPanel';
 import { VisualizerSelector } from '@/components/ui/retro/VisualizerSelector';
 import { ColorPaletteSelector } from '@/components/ui/retro/ColorPaletteSelector';
-import { NeonButton } from '@/components/ui/retro/NeonButton';
 import { SongLibraryLCD } from '@/components/ui/retro/SongLibraryLCD';
+import { AboutModal } from '@/components/ui/retro/AboutModal';
 
 interface Song {
   filename: string
@@ -24,29 +24,28 @@ export function ControlPanel() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoadingSongs, setIsLoadingSongs] = useState(true);
   const [selectedSongPath, setSelectedSongPath] = useState<string | null>(null);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [wasPlayingBeforeModal, setWasPlayingBeforeModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    activePalette,
-    activeVisualizer,
-    setActivePalette,
-    setActiveVisualizer,
-    setVisualizerParam,
-    getVisualizerParams,
-  } = useVisualizerStore();
+  // OPTIMIZED: Use specific selectors to prevent unnecessary re-renders
+  const activePalette = useVisualizerStore((state) => state.activePalette);
+  const activeVisualizer = useVisualizerStore((state) => state.activeVisualizer);
+  const setActivePalette = useVisualizerStore((state) => state.setActivePalette);
+  const setActiveVisualizer = useVisualizerStore((state) => state.setActiveVisualizer);
+  const setVisualizerParam = useVisualizerStore((state) => state.setVisualizerParam);
+  const getVisualizerParams = useVisualizerStore((state) => state.getVisualizerParams);
 
-  const {
-    isPlaying,
-    currentSong,
-    currentTime,
-    duration,
-    isPanelExpanded,
-    setIsPlaying,
-    setCurrentSong,
-    setCurrentTime,
-    setDuration,
-    setIsPanelExpanded
-  } = useAudioStore();
+  const isPlaying = useAudioStore((state) => state.isPlaying);
+  const currentSong = useAudioStore((state) => state.currentSong);
+  const currentTime = useAudioStore((state) => state.currentTime);
+  const duration = useAudioStore((state) => state.duration);
+  const isPanelExpanded = useAudioStore((state) => state.isPanelExpanded);
+  const setIsPlaying = useAudioStore((state) => state.setIsPlaying);
+  const setCurrentSong = useAudioStore((state) => state.setCurrentSong);
+  const setCurrentTime = useAudioStore((state) => state.setCurrentTime);
+  const setDuration = useAudioStore((state) => state.setDuration);
+  const setIsPanelExpanded = useAudioStore((state) => state.setIsPanelExpanded);
 
   const audioManager = useMemo(() => AudioManager.getInstance(), []);
 
@@ -189,53 +188,65 @@ export function ControlPanel() {
     }
   }, [isPlaying, audioManager]);
 
-  const handleStop = useCallback(() => {
-    audioManager.stop();
-    setCurrentTime(0);
-  }, [audioManager, setCurrentTime]);
-
-  const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
+  const handleSeek = useCallback((time: number) => {
     audioManager.setCurrentTime(time);
     setCurrentTime(time);
   }, [audioManager, setCurrentTime]);
 
-  const formatTime = useCallback((seconds: number): string => {
-    if (!seconds || isNaN(seconds)) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }, []);
+  const handleOpenAboutModal = useCallback(() => {
+    // Save current playing state
+    setWasPlayingBeforeModal(isPlaying);
+    // Pause music if playing
+    if (isPlaying) {
+      audioManager.pause();
+    }
+    setIsAboutModalOpen(true);
+  }, [isPlaying, audioManager]);
 
-  // Memoize progress bar background calculation
-  const progressBackground = useMemo(() => {
-    if (!duration || !currentTime) return '';
-    const percentage = (currentTime / duration) * 100;
-    return `linear-gradient(to right, #00ffff 0%, #00ffff ${percentage}%, #2a2a3e ${percentage}%, #2a2a3e 100%)`;
-  }, [currentTime, duration]);
+  const handleCloseAboutModal = useCallback(() => {
+    setIsAboutModalOpen(false);
+    // Resume music if it was playing before
+    if (wasPlayingBeforeModal) {
+      audioManager.play();
+    }
+  }, [wasPlayingBeforeModal, audioManager]);
 
   return (
     <div className="w-full h-full overflow-y-auto">
       <RetroPanel variant="primary" hasGlow hasBevel glowColor="cyan" className="rounded-none border-x-0 border-b-0 h-full">
         <div className="h-full max-w-7xl mx-auto flex flex-col">
-          {/* Collapse/Expand Button - Top Center */}
-          <button
-            onClick={() => setIsPanelExpanded(!isPanelExpanded)}
-            className="w-full py-1 px-4 bg-retro-panel border-b-2 border-neon-cyan hover:bg-neon-cyan/10 transition-all duration-200 flex items-center justify-center gap-2"
-            style={{
-              boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)'
-            }}
-            title={isPanelExpanded ? 'Collapse Panel' : 'Expand Panel'}
-          >
-            <span className="text-xs font-ui font-bold text-neon-cyan uppercase tracking-wide">
-              {isPanelExpanded ? 'Collapse Controls' : 'Expand Controls'}
-            </span>
-            {isPanelExpanded ? (
-              <ChevronDown className="text-neon-cyan" size={16} />
-            ) : (
-              <ChevronUp className="text-neon-cyan" size={16} />
-            )}
-          </button>
+          {/* Header with Collapse/Expand Button and About Button */}
+          <div className="w-full border-b-2 border-neon-cyan bg-retro-panel flex items-center gap-0 py-1">
+            {/* Collapse/Expand Button - Takes remaining space */}
+            <button
+              onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+              className="flex-1 py-1 px-4 hover:bg-neon-cyan/10 transition-all duration-200 flex items-center justify-center gap-2"
+              title={isPanelExpanded ? 'Collapse Panel' : 'Expand Panel'}
+            >
+              <span className="text-xs font-ui font-bold text-neon-cyan uppercase tracking-wide">
+                {isPanelExpanded ? 'Collapse Controls' : 'Expand Controls'}
+              </span>
+              {isPanelExpanded ? (
+                <ChevronDown className="text-neon-cyan" size={16} />
+              ) : (
+                <ChevronUp className="text-neon-cyan" size={16} />
+              )}
+            </button>
+
+            {/* About Button - Fixed width on the right */}
+            <button
+              onClick={handleOpenAboutModal}
+              className="flex-shrink-0 px-3 py-1 mx-2 border-2 border-neon-green/50 rounded text-neon-green hover:bg-neon-green/10 hover:border-neon-green transition-all duration-200 flex items-center gap-1"
+              style={{
+                textShadow: '0 0 8px currentColor',
+                boxShadow: '0 0 10px rgba(0, 255, 65, 0.3)'
+              }}
+              title="About Aura Visuals"
+            >
+              <Info size={14} />
+              <span className="text-xs font-ui font-bold uppercase">About</span>
+            </button>
+          </div>
 
           {isPanelExpanded && (
             <div className="flex-1 pt-4">
@@ -252,94 +263,46 @@ export function ControlPanel() {
               </div>
 
               {/* Center Column: Audio Controls (4 cols) */}
-              <div className="lg:col-span-4 space-y-2">
-                {/* Song Library LCD - Combined Display */}
-                <SongLibraryLCD
-                  songs={songs}
-                  selectedSong={selectedSongPath}
-                  currentSongName={currentSong}
-                  onSelectSong={handleSongSelect}
-                  isLoading={isLoadingSongs}
-                />
-
-                {/* Audio Controls */}
-                <div className="space-y-2">
-
-                  {/* Playback Controls - More compact */}
-                  <div className="flex items-center justify-center gap-2">
-                    <NeonButton
-                      onClick={handlePlayPause}
-                      disabled={!currentSong}
-                      variant="cyan"
-                      size="sm"
-                      icon={isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                      title={isPlaying ? 'Pause' : 'Play'}
-                    >
-                      {isPlaying ? 'Pause' : 'Play'}
-                    </NeonButton>
-
-                    <NeonButton
-                      onClick={handleStop}
-                      disabled={!currentSong}
-                      variant="orange"
-                      size="sm"
-                      icon={<Square size={16} />}
-                      title="Stop"
-                    >
-                      Stop
-                    </NeonButton>
-
-                    <NeonButton
-                      onClick={() => fileInputRef.current?.click()}
-                      variant="green"
-                      size="sm"
-                      icon={<Upload size={16} />}
-                      title="Load File"
-                    >
-                      Load
-                    </NeonButton>
-
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="audio/*"
-                      onChange={handleFileInput}
-                      className="hidden"
+              <div className="lg:col-span-4 flex flex-col" style={{ height: 'calc(40vh - 4rem)' }}>
+                {/* Container with fixed height matching side columns */}
+                <div className="flex-1 flex flex-col min-h-0 gap-2">
+                  {/* Song Library LCD - Takes remaining space */}
+                  <div className="flex-1 min-h-0">
+                    <SongLibraryLCD
+                      songs={songs}
+                      selectedSong={selectedSongPath}
+                      currentSongName={currentSong}
+                      isPlaying={isPlaying}
+                      currentTime={currentTime}
+                      duration={duration}
+                      onSelectSong={handleSongSelect}
+                      onPlayPause={handlePlayPause}
+                      onLoadFile={() => fileInputRef.current?.click()}
+                      onSeek={handleSeek}
+                      isLoading={isLoadingSongs}
                     />
                   </div>
 
-                  {/* Progress Bar - More compact */}
-                  {currentSong && (
-                    <div className="space-y-1">
-                      <input
-                        type="range"
-                        min="0"
-                        max={duration || 0}
-                        value={currentTime}
-                        onChange={handleSeek}
-                        className="w-full h-1 rounded-lg appearance-none cursor-pointer"
-                        style={{
-                          background: progressBackground
-                        }}
-                      />
-                      <div className="flex justify-between text-xs font-mono-retro text-neon-cyan/70 tabular-nums">
-                        <span>{formatTime(currentTime)}</span>
-                        <span>{formatTime(duration)}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Color Palette - Below audio controls */}
-                <div>
-                  <label className="text-xs font-ui font-bold text-neon-cyan uppercase tracking-wide mb-2 block">
-                    Color Palette
-                  </label>
-                  <ColorPaletteSelector
-                    palettes={paletteNames}
-                    value={activePalette}
-                    onChange={(value) => setActivePalette(value as keyof typeof COLOR_PALETTES)}
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleFileInput}
+                    className="hidden"
                   />
+
+                  {/* Color Palette - Fixed height at bottom */}
+                  <div className="flex-shrink-0">
+                    <label className="text-xs font-ui font-bold text-neon-cyan uppercase tracking-wide mb-2 block">
+                      Color Palette
+                    </label>
+                    <ColorPaletteSelector
+                      palettes={paletteNames}
+                      value={activePalette}
+                      onChange={(value) => setActivePalette(value as keyof typeof COLOR_PALETTES)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -391,6 +354,9 @@ export function ControlPanel() {
           )}
         </div>
       </RetroPanel>
+
+      {/* About Modal */}
+      <AboutModal isOpen={isAboutModalOpen} onClose={handleCloseAboutModal} />
     </div>
   );
 }
